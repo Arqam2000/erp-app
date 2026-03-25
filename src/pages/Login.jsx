@@ -72,10 +72,10 @@
 
 //   return (
 //     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100">
-      
+
 //       {/* Card */}
 //       <div className="w-[335px] md:w-90 bg-white/80 backdrop-blur-lg shadow-2xl rounded-3xl p-8 border border-white/40">
-        
+
 //         <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
 //           Login Now
 //         </h1>
@@ -142,24 +142,82 @@
 
 // apealing looking login page with tailwind css
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User, Mail, Lock } from "lucide-react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [user, setUser] = useState({
+    id: null,
+    username: "",
+    password: ""
+  })
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const navigate = useNavigate()
+
+  const submit = async () => {
+    try {
+      console.log("user", user)
+
+      if (user.password === password) {
+        // alert("password is correct")
+        navigate("/home")
+      } else {
+        alert("wrong password")
+      }
+
+
+    } catch (error) {
+      console.log("Error:", error)
+    }
+  }
+
+  useEffect(() => {
+    setUsername("");
+
+    if (!user.id) return;
+
+    console.log("user", user)
+
+
+    axios.post("/api/get-user", { id: user.id })
+      .then(res => {
+        console.log("resp", res.data)
+        // setUser({ ...user, username: res.data.data[0]?.username })
+        setUsername(res.data.data[0]?.username || "");
+        setPassword(res.data.data[0]?.password || "");
+      })
+      .catch(err => {
+        console.log("Error:", err)
+      })
+  }, [user.id])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-6">
-      
+
       {/* Glass Card */}
       <div className="w-[400px] bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl p-6">
-        
+
         <h1 className="text-4xl font-bold text-center text-white mb-2">
           Welcome Back
         </h1>
         <p className="text-center text-white/80 mb-8">
           Login to continue
         </p>
+
+        <div className="relative mb-5">
+          <Mail className="absolute left-4 top-3.5 text-gray-500" size={18} />
+          <input
+            type="number"
+            placeholder="Enter your ID"
+            className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/90 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            onChange={(e) => setUser({ ...user, id: e.target.value })}
+          />
+        </div>
 
         {/* Username */}
         <div className="relative mb-5">
@@ -168,18 +226,13 @@ export default function Login() {
             type="text"
             placeholder="Username"
             className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/90 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            onChange={(e) => setUser({ ...user, username: e.target.value })}
+            value={username}
           />
         </div>
 
         {/* Email */}
-        <div className="relative mb-5">
-          <Mail className="absolute left-4 top-3.5 text-gray-500" size={18} />
-          <input
-            type="email"
-            placeholder="Email address"
-            className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/90 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
-          />
-        </div>
+
 
         {/* Password */}
         <div className="relative mb-6">
@@ -188,6 +241,7 @@ export default function Login() {
             type={showPassword ? "text" : "password"}
             placeholder="Password"
             className="w-full pl-11 pr-20 py-3 rounded-xl bg-white/90 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            onChange={(e) => setUser({ ...user, password: e.target.value })}
           />
 
           <button
@@ -206,7 +260,9 @@ export default function Login() {
         </div>
 
         {/* Login Button */}
-        <button className="w-full py-3 rounded-xl text-white font-semibold text-lg bg-gradient-to-r from-purple-600 to-pink-500 hover:scale-105 transition duration-300 shadow-lg">
+        <button className="w-full py-3 rounded-xl text-white font-semibold text-lg bg-gradient-to-r from-purple-600 to-pink-500 hover:scale-105 transition duration-300 shadow-lg"
+          onClick={submit}
+        >
           Sign In
         </button>
 
