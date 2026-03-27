@@ -32,7 +32,7 @@ export default function Home() {
         <button onClick={() => setOpen(true)}>
           <Menu size={26} />
         </button>
-        <h1 className="text-lg font-semibold">My App</h1>
+        <h1 className="text-lg font-semibold">Kay QMS</h1>
         <div />
       </div>
 

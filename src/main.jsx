@@ -4,6 +4,8 @@ import './index.css'
 import App from './App.jsx'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Home from './pages/Home.jsx'
+import Intimation from './pages/Intimation.jsx'
+import { LoginProvider } from './context/LoginContext.jsx'
 
 let router = createBrowserRouter([
   {
@@ -19,12 +21,18 @@ let router = createBrowserRouter([
   {
     path: "/home",
     element: <Home />
-  }
+  },
+  {
+    path: "/intimation",
+    element: <Intimation />
+  },
 
 ])
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <LoginProvider>
+      <RouterProvider router={router} />
+    </LoginProvider>
   </StrictMode>,
 )

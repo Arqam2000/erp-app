@@ -146,6 +146,7 @@ import { useEffect, useState } from "react";
 import { User, Mail, Lock } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import useLoginName from "../context/LoginContext";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -158,6 +159,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
 
   const navigate = useNavigate()
+
+  const {setLoginName} = useLoginName()
 
   const submit = async () => {
     try {
@@ -190,6 +193,7 @@ export default function Login() {
         // setUser({ ...user, username: res.data.data[0]?.username })
         setUsername(res.data.data[0]?.username || "");
         setPassword(res.data.data[0]?.password || "");
+        setLoginName(res.data.data[0]?.username || "")
       })
       .catch(err => {
         console.log("Error:", err)
@@ -203,14 +207,15 @@ export default function Login() {
       <div className="w-[400px] bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl p-6">
 
         <h1 className="text-4xl font-bold text-center text-white mb-2">
-          Welcome Back
+          Kay QMS
         </h1>
         <p className="text-center text-white/80 mb-8">
           Login to continue
         </p>
 
         <div className="relative mb-5">
-          <Mail className="absolute left-4 top-3.5 text-gray-500" size={18} />
+          {/* <Mail className="absolute left-4 top-3.5 text-gray-500" size={18} /> */}
+          <User className="absolute left-4 top-3.5 text-gray-500" size={18} />
           <input
             type="number"
             placeholder="Enter your ID"
@@ -253,11 +258,11 @@ export default function Login() {
           </button>
         </div>
 
-        <div className="text-right mb-6">
+        {/* <div className="text-right mb-6">
           <button className="text-sm text-white hover:underline">
             Forgot Password?
           </button>
-        </div>
+        </div> */}
 
         {/* Login Button */}
         <button className="w-full py-3 rounded-xl text-white font-semibold text-lg bg-gradient-to-r from-purple-600 to-pink-500 hover:scale-105 transition duration-300 shadow-lg"
