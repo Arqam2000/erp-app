@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import Intimation from './pages/Intimation.jsx'
 import { LoginProvider } from './context/LoginContext.jsx'
+import LineClearance from './pages/LineClearance.jsx'
 
 let router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ let router = createBrowserRouter([
   {
     path: "/intimation",
     element: <Intimation />
+  },
+  {
+    path: "/line-clearance",
+    element: <LineClearance />
   },
 
 ])

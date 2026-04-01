@@ -160,7 +160,7 @@ export default function Login() {
 
   const navigate = useNavigate()
 
-  const {setLoginName} = useLoginName()
+  const {setLoginName, setLoginId} = useLoginName()
 
   const submit = async () => {
     try {
@@ -194,6 +194,7 @@ export default function Login() {
         setUsername(res.data.data[0]?.username || "");
         setPassword(res.data.data[0]?.password || "");
         setLoginName(res.data.data[0]?.username || "")
+        setLoginId(res.data.data[0]?.id || null)
       })
       .catch(err => {
         console.log("Error:", err)

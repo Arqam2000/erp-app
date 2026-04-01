@@ -1,6 +1,7 @@
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
 import useLoginName from '../context/LoginContext';
+import Navbar from '../components/Navbar';
 
 const Intimation = () => {
     const [intimation, setIntimation] = useState([])
@@ -22,8 +23,11 @@ const Intimation = () => {
     const [tstageDesc, setTstageDesc] = useState([])
     const [selectedDept, setSelectedDept] = useState([])
     const [deptName, setDeptName] = useState([])
+    const [pcomp, setPcomp] = useState(null)
 
-    const {LoginName} = useLoginName()
+    const { LoginName, LoginId } = useLoginName()
+
+    const [empName, setEmpName] = useState(LoginName)
 
 
     const handleChange = (e) => {
@@ -33,9 +37,35 @@ const Intimation = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log(formData);
+
+        const submitData = {
+            pcomp,
+            tstage: selectedTstage,
+            dept: selectedDept,
+            cby: LoginId,
+            remarks: formData.remarks
+        }
+
+        console.log(submitData);
+
+        try {
+            const res = await axios.post("/api/save-data", { ...submitData })
+
+            if (res.data.success) {
+                alert("Saved successfuly")
+                setSelectedBatchNo("")
+                setSelectedTstage("")
+                setSelectedDept("")
+                setFormData({ ...formData, remarks: "" })
+            }
+        } catch (error) {
+            console.log("Error:", error)
+            alert("Cannot save")
+        }
+
+
     };
 
     useEffect(() => {
@@ -56,20 +86,41 @@ const Intimation = () => {
             })
     }, [])
 
-    const sendToWhatsapp = async () => {
-        const message = `
-        intimation
-        ----------------
-        ${intimation.map((item, index) => `${index + 1}. ${item}`).join("\n")}
-        `
+    const sendToWhatsapp = async (e) => {
+        // const message = `
+        // intimation
+        // ----------------
+        // ${intimation.map((item, index) => `${index + 1}. ${item}`).join("\n")}
+        // `
         // const encodedMessage = encodeURIComponent(message);
 
         // window.open(`https://wa.me/+923002120067?text=${encodedMessage}`, "_blank");
 
+        e.preventDefault();
+
+        const submitData = {
+            pcomp,
+            tstage: selectedTstage,
+            dept: selectedDept,
+            cby: LoginId,
+            remarks: formData.remarks
+        }
+
         try {
-            const response = await axios.post("/api/send-message", { message })
+            const response = await axios.post("/api/send-message", { ...submitData })
+
             if (response.data.success) {
+
+                const encodedMessage = encodeURIComponent(response.data.intimationMessage);
+
+                window.open(`https://wa.me/+923002120067?text=${encodedMessage}`, "_blank"); 
+
                 alert("Message sent successfully")
+
+                setSelectedBatchNo("")
+                setSelectedTstage("")
+                setSelectedDept("")
+                setFormData({ ...formData, remarks: "" })
             }
         } catch (error) {
             alert("Cannot send message")
@@ -91,14 +142,17 @@ const Intimation = () => {
 
         //     <button onClick={sendToWhatsapp} className='py-1 px-3 bg-blue-500 text-white rounded'>Send to whatsapp</button>
         // </div>
+        <>
+        <Navbar />
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+            
             <div className="bg-white shadow-2xl rounded-2xl w-full max-w-5xl p-8">
 
                 <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">
                     Send Process Intimation
                 </h2>
 
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <form onSubmit={sendToWhatsapp} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 
                     {/* Date */}
                     <div className="flex flex-col">
@@ -131,10 +185,16 @@ const Intimation = () => {
                                     (prod) => prod.batch_no === e.target.value
                                 );
 
+                                console.log(e.target.value)
+
+                                console.log(selectedProduct)
+
                                 if (selectedProduct) {
                                     setProductName(selectedProduct.product_name);
+                                    setPcomp(selectedProduct.pcomp)
                                 } else {
                                     setProductName("");
+                                    setPcomp(null)
                                 }
                             }}
                             className="input"
@@ -142,7 +202,7 @@ const Intimation = () => {
                             <option value="Select Batch No" selected>Select Batch No</option>
                             {
                                 products.map(prod => (
-                                    <option value={prod.product_name}>{prod.batch_no}/ {prod.product_name}/ {prod.pcomp}</option>
+                                    <option value={prod.batch_no}>{prod.batch_no}/ {prod.product_name}/ {prod.pcomp}</option>
                                 ))
                             }
                         </select>
@@ -191,7 +251,7 @@ const Intimation = () => {
                             <option value="">Select Process</option>
                             {
                                 qcTestRows.map(row => (
-                                    <option value={row.qcTestDesc}>{row.qcTestDesc}</option>
+                                    <option value={row.qcTest}>{row.qcTestDesc}</option>
                                 ))
                             }
                         </select>
@@ -225,7 +285,7 @@ const Intimation = () => {
 
                                 const Dept = dept.find(d => d.dept == e.target.value)
 
-                                if(Dept){
+                                if (Dept) {
                                     setDeptName(Dept.dept_name)
                                 } else {
                                     setDeptName("")
@@ -236,7 +296,7 @@ const Intimation = () => {
                             <option value="">Select Dept</option>
                             {
                                 dept.map(d => (
-                                    <option value={d.dept_name}>{d.dept_name}</option>
+                                    <option value={d.dept}>{d.dept_name}</option>
                                 ))
                             }
                         </select>
@@ -264,7 +324,7 @@ const Intimation = () => {
                             type="text"
                             name="employeeName"
                             placeholder="Enter employee name"
-                            value={LoginName}
+                            value={empName}
                             onChange={handleChange}
                             className="input"
                         />
@@ -298,6 +358,7 @@ const Intimation = () => {
                 </form>
             </div>
         </div>
+        </>
     )
 }
 
