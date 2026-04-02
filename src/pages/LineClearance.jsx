@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import useLoginName from '../context/LoginContext'
+import axios from 'axios'
 
 const LineClearance = () => {
     const [date, setDate] = useState()
@@ -28,6 +29,25 @@ const LineClearance = () => {
                     </h2>
 
                     <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {/* Line Clearance # */}
+                      <div className="flex flex-col">
+                            <label className="text-sm font-semibold text-gray-600 mb-1">
+                                Line Clearance #
+                            </label>
+                            <select
+                                type="text"
+                                name="lineClearanceNo"
+                                placeholder="Enter line clearance number"
+                                className="input"
+                            >
+                                <option value="Select Line Clearance #" selected>Line Clearance #</option>
+                            {/* {
+                                products.map(prod => (
+                                    <option value={prod.batch_no}>{prod.batch_no}/ {prod.product_name}/ {prod.pcomp}</option>
+                                ))
+                            } */}
+                            </select>
+                        </div>
 
                         {/* Date */}
                         <div className="flex flex-col">
@@ -74,8 +94,8 @@ const LineClearance = () => {
                                 // }}
                                 className="input"
                             >
-                                {/* <option value="Select Batch No" selected>Select Batch No</option>
-                            {
+                                <option value="Select Batch No" selected>Batch No</option>
+                            {/* {
                                 products.map(prod => (
                                     <option value={prod.batch_no}>{prod.batch_no}/ {prod.product_name}/ {prod.pcomp}</option>
                                 ))
@@ -123,8 +143,8 @@ const LineClearance = () => {
                                 // }}
                                 className="input"
                             >
-                                {/* <option value="">Select Process</option>
-                            {
+                                <option value="">Process Stage</option>
+                            {/* {
                                 qcTestRows.map(row => (
                                     <option value={row.qcTest}>{row.qcTestDesc}</option>
                                 ))
@@ -168,8 +188,8 @@ const LineClearance = () => {
                                 // }}
                                 className="input"
                             >
-                                {/* <option value="">Select Dept</option>
-                            {
+                                <option value="">Dept</option>
+                            {/* {
                                 dept.map(d => (
                                     <option value={d.dept}>{d.dept_name}</option>
                                 ))
@@ -189,6 +209,40 @@ const LineClearance = () => {
                             className="input"
                         />
                     </div> */}
+
+                      {/* Check List For */}
+                      <div className="flex flex-col">
+                            <label className="text-sm font-semibold text-gray-600 mb-1">
+                                Check List For
+                            </label>
+                            <select
+                                type="text"
+                                name="checkListFor"
+                                placeholder="Enter checklist for"
+                                className="input"
+                            >
+                                <option value="">Check List For</option>
+                            {/* {
+                                dept.map(d => (
+                                    <option value={d.dept}>{d.dept_name}</option>
+                                ))
+                            } */}
+                            </select>
+                        </div>
+
+                        {/* intimation date */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-semibold text-gray-600 mb-1">
+                                Intimation Date
+                            </label>
+                            <input
+                                type="date"
+                                name="intimationDate"
+                                // value={date}
+                                // onChange={handleChange}
+                                className="input"
+                            />
+                        </div>
 
                         {/* Employee */}
                         <div className="flex flex-col">
@@ -264,6 +318,10 @@ const LineClearance = () => {
                                 </div>
                            { /* ))} */}
                         </div>
+
+                        
+
+                        
 
 
 
