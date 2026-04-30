@@ -5,7 +5,7 @@ import BackButton from '../components/BackButton';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 
-const LineClearance = () => {
+const EditLineClearance = () => {
     const getLocalDateTime = () => {
         const now = new Date();
         const offset = now.getTimezoneOffset();
@@ -27,50 +27,54 @@ const LineClearance = () => {
         checkList.map(() => "") // one value per item
     );
     const [lclear, setLclear] = useState()
-    console.log("responses", responses)
+    // console.log("responses", responses)
 
     const { LoginName, LoginId, setLoginId, setLoginName } = useLoginName()
 
     const [empName, setEmpName] = useState(LoginName)
+    const [lclearRows, setLclearRows] = useState([])
+    const [lclearRow, setLclearRow] = useState(null)
+    const [updCheckList, setUpdCheckList] = useState([])
 
-    const navigate = useNavigate()
+    const [formData, setFormData] = useState({
+        ldate: "",
+        wcall: "",
+        batch_no: "",
+        pcomp: "",
+        product_name: "",
+        tstage_des: "",
+        idate: "",
+        ename: "",
+        remarks: "",
+        au: ""
+    });
 
+    const navigate = useNavigate();
 
 
     useEffect(() => {
-        const storedLoginName = localStorage.getItem("loginName");
-        const storedLoginId = JSON.parse(localStorage.getItem("loginId"));
-
-        setLoginName(storedLoginName);
-        setLoginId(storedLoginId);
-
-        axios.post("/api/check-authorization", {
-            loginId: storedLoginId,
-            todo: "Add"
-        })
+        setLoginName(localStorage.getItem("loginName"))
+        setLoginId(JSON.parse(localStorage.getItem("loginId")))
+        axios.get("/api/line-clearance")
             .then(res => {
-                console.log("resp", res.data.addId)
+                // console.log(res.data)
+                setProducts(res.data.newRows)
+                setCheckListFor(res.data.rows)
 
-                if (res.data.addId !== 'T') {
-                    navigate("/home")
-                    alert("You are not authorized. Contact administrator")
-                } else {
-                    axios.get("/api/line-clearance")
-                        .then(res => {
-                            // console.log(res.data)
-                            setProducts(res.data.newRows)
-                            setCheckListFor(res.data.rows)
-                        })
-                        .catch(err => {
-                            console.log("Error:", err)
-                        })
-                }
+
             })
             .catch(err => {
                 console.log("Error:", err)
             })
-
-
+        axios.get("/api/get-lclear")
+            .then(res => {
+                console.log(res.data)
+                setLclearRows(res.data.lclearRows)
+                // setCheckListFor(res.data.rows)
+            })
+            .catch(err => {
+                console.log("Error:", err)
+            })
     }, [])
 
 
@@ -82,44 +86,132 @@ const LineClearance = () => {
             })
     }, [selectedCheckListNo])
 
-    const handleSubmit = async (e) => {
+    useEffect(() => {
+        axios.post("/api/get-obs", { lclear })
+            .then(res => {
+                console.log(res.data.obs)
+
+                const obsMap = {};
+                res.data.obs.forEach(item => {
+                    obsMap[item.sn] = {
+                        obs: item.obs,
+                        lcleard: item.lcleard
+                    };
+                });
+
+                // Merge into checklist
+                const updatedCheckList = checkList.map(item => ({
+                    ...item,
+                    obs: obsMap[item.sn] === 'Y' ? 'Complies' : 'Not Complies',
+                    lcleard: obsMap[item.sn]?.lcleard
+                }));
+
+                console.log(updatedCheckList)
+
+                setUpdCheckList(updatedCheckList)
+            })
+    }, [lclear, checkList])
+
+    const handleEdit = async (e) => {
         try {
             e.preventDefault()
 
-            let merged = [];
+            // let merged = [];
 
-            if (responses.length === checkList.length) {
-                merged = checkList.map((item, index) => ({
-                    ...item,
-                    observation: responses[index] == "Complies" ? 'Y' : 'N'
-                }));
-            } else {
-                console.error("Length mismatch");
-            }
+            // if (responses.length === checkList.length) {
+            //     merged = checkList.map((item, index) => ({
+            //         ...item,
+            //         observation: responses[index] == "Complies" ? 'Y' : 'N'
+            //     }));
+            // } else {
+            //     console.error("Length mismatch");
+            // }
+
+            const mergedChecklist = updCheckList.map(item => ({
+                ...item,
+                observation: item.obs === "Complies" ? "Y" : "N"
+            }));
+
+
+            // const submitData = {
+            //     ldate: date,
+            //     doneby: LoginId,
+            //     remarks,
+            //     wcall: selectedIntimationNo,
+            //     au,
+            //     checkList: merged
+            // }
+
+            // console.log(submitData)
 
             const submitData = {
-                ldate: date,
+                ...formData,
+                lclear,
                 doneby: LoginId,
-                remarks,
-                wcall: selectedIntimationNo,
-                au,
-                checkList: merged
-            }
+                checkList: mergedChecklist
+            };
 
-            console.log(submitData)
+            console.log("Data", submitData);
 
-            const res = await axios.post("/api/line-clearance", { ...submitData })
+            const res = await axios.post("/api/edit-line-clearance", { ...submitData })
 
             if (res.data.success) {
-                setLclear(res.data.lclear)
+                // setLclear(res.data.lclear)
 
                 alert(res.data.message)
 
-                setSelectedIntimationNo(null)
-                setSelectedProduct(null)
-                setSelectedCheckListNo(null)
-                setCheckList([])
-                setResponses(checkList.map(() => ""))
+                navigate(0)
+
+                // setSelectedIntimationNo(null)
+                // setSelectedProduct(null)
+                // setSelectedCheckListNo(null)
+                // setCheckList([])
+                // setResponses(checkList.map(() => ""))
+            }
+
+
+        } catch (error) {
+            console.log("Error:", error)
+            alert(error?.response?.data.message)
+        }
+    }
+    
+    const handleDelete = async (e) => {
+        try {
+            e.preventDefault()
+
+            const confirmDelete = window.confirm("Are you sure you want to delete?");
+
+            if (!confirmDelete) return;
+
+            const mergedChecklist = updCheckList.map(item => ({
+                ...item,
+                observation: item.obs === "Complies" ? "Y" : "N"
+            }));
+
+            const submitData = {
+                ...formData,
+                lclear,
+                doneby: LoginId,
+                checkList: mergedChecklist
+            };
+
+            console.log("Data", submitData);
+
+            const res = await axios.post("/api/delete-line-clearance", { ...submitData })
+
+            if (res.data.success) {
+                // setLclear(res.data.lclear)
+
+                alert(res.data.message)
+
+                navigate(0)
+
+                // setSelectedIntimationNo(null)
+                // setSelectedProduct(null)
+                // setSelectedCheckListNo(null)
+                // setCheckList([])
+                // setResponses(checkList.map(() => ""))
             }
 
 
@@ -138,9 +230,9 @@ const LineClearance = () => {
     }
 
     const handleChange = (index, value) => {
-        const updated = [...responses];
-        updated[index] = value;
-        setResponses(updated);
+        const updated = [...updCheckList];
+        updated[index].obs = value;
+        setUpdCheckList(updated);
         console.log("updated", updated)
     };
 
@@ -153,39 +245,66 @@ const LineClearance = () => {
                     <BackButton />
 
                     <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
-                        Line Clearance
+                        Edit/Delete Line Clearance
                     </h2>
 
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {/* Line Clearance # */}
                         <div className="flex flex-col">
 
-                            <input
+                            <select
                                 type="text"
                                 name="lineClearanceNo"
                                 // placeholder="line clearance number"
                                 value={lclear}
                                 className="input"
-                            />
-                            {/* <option value="Select Line Clearance #" selected>Line Clearance #</option> */}
-                            {/* {
-                                products.map(prod => (
-                                    <option value={prod.batch_no}>{prod.batch_no}/ {prod.product_name}/ {prod.pcomp}</option>
-                                ))
-                            } */}
-                            {/* </select> */}
+                                onChange={(e) => {
+                                    console.log(e.target.value)
+
+                                    setLclear(e.target.value)
+
+                                    const row = lclearRows.find(row => row.lclear == e.target.value)
+
+                                    if (row) {
+                                        setLclearRow(row)
+                                        setSelectedCheckListNo(row.au)
+
+                                        setFormData({
+                                            ldate: row.ldate || "",
+                                            wcall: row.wcall || "",
+                                            batch_no: row.batch_no || "",
+                                            pcomp: row.pcomp || "",
+                                            product_name: row.product_name || "",
+                                            tstage_des: row.tstage_des || "",
+                                            idate: row.idate ? row.idate.split("T")[0] : "",
+                                            ename: row.ename || "",
+                                            remarks: row.remarks || "",
+                                            au: row.au || ""
+                                        });
+                                    } else {
+                                        setLclearRow(null)
+                                    }
+                                }}
+                            >
+                                <option value="Select Line Clearance #" selected>Line Clearance #</option>
+                                {
+                                    lclearRows.map(lclear => (
+                                        <option value={lclear.lclear}>{lclear.lclear}/ {new Date(lclear.ldate).toDateString()}/ {new Date(lclear.idate).toDateString()} / {lclear.ename}</option>
+                                    ))
+                                }
+                            </select>
                         </div>
 
-                        {/* Date */}
+                        {/* LDate */}
                         <div className="flex flex-col">
                             <label className="text-sm font-semibold text-gray-600 mb-1">
-                                Date
+                                date
                             </label>
                             <input
                                 type="datetime-local"
                                 name="date"
-                                value={date}
-                                // onChange={handleChange}
+                                value={formData.ldate ? formData.ldate.slice(0, 16) : ""}
+                                onChange={e => { setFormData({ ...formData, ldate: e.target.value }) }}
                                 className="input"
                             />
                         </div>
@@ -195,37 +314,26 @@ const LineClearance = () => {
                             <label className="text-sm font-semibold text-gray-600 mb-1">
                                 Intimation #
                             </label>
-                            <select
+                            <input
                                 type="text"
                                 name="intimationNo"
                                 placeholder="Enter intimation number"
-                                value={selectedIntimationNo || ""}
+                                value={formData.wcall}
                                 // value={formData.batchNo}
                                 onChange={e => {
                                     setSelectedIntimationNo(e.target.value)
-                                    const selectedProduct = products.find(
-                                        (prod) => prod.intimation == e.target.value
-                                    );
-
-                                    console.log(e.target.value)
-
-                                    console.log(selectedProduct)
-
-                                    if (selectedProduct) {
-                                        setSelectedProduct(selectedProduct)
-                                    } else {
-                                        setSelectedProduct(null)
-                                    }
+                                    setFormData({ ...formData, wcall: e.target.value })
                                 }}
                                 className="input"
-                            >
-                                <option value="Select Intimation No">Select Intimation No</option>
+                                readOnly
+                            />
+                            {/* <option value="Select Intimation No">Select Intimation No</option>
                                 {
                                     products.map(prod => (
                                         <option value={prod.intimation}>{prod.intimation}</option>
                                     ))
                                 }
-                            </select>
+                            </select> */}
                         </div>
 
                         {/* Batch No */}
@@ -237,8 +345,8 @@ const LineClearance = () => {
                                 type="text"
                                 name="batchNo"
                                 placeholder="Batch No"
-                                value={selectedProduct?.batch_no || ""}
-                                // value={formData.batchNo}
+                                // value={lclearRow?.batch_no}
+                                value={formData.batch_no}
                                 // onChange={e => {
                                 //     setSelectedIntimationNo(e.target.value)
                                 //     const selectedProduct = products.find(
@@ -255,7 +363,11 @@ const LineClearance = () => {
                                 //         setSelectedProduct(null)
                                 //     }
                                 // }}
+                                onChange={e => {
+                                    setFormData({ ...formData, batch_no: e.target.value })
+                                }}
                                 className="input"
+                                readOnly
                             />
                             {/* <option value="Select Intimation No" selected>Select Intimation No</option>
                             {
@@ -274,7 +386,7 @@ const LineClearance = () => {
                                 type="text"
                                 name="orderNo"
                                 placeholder="order No"
-                                value={selectedProduct?.order_no || ""}
+                                value={formData.pcomp}
                                 // value={formData.batchNo}
                                 // onChange={e => {
                                 //     setSelectedIntimationNo(e.target.value)
@@ -292,7 +404,9 @@ const LineClearance = () => {
                                 //         setSelectedProduct(null)
                                 //     }
                                 // }}
+                                onChange={e => { setFormData({ ...formData, pcomp: e.target.value }) }}
                                 className="input"
+                                readOnly
                             />
                             {/* <option value="Select Intimation No" selected>Select Intimation No</option>
                             {
@@ -312,25 +426,12 @@ const LineClearance = () => {
                                 type="text"
                                 name="productName"
                                 placeholder="Product Name"
-                                value={selectedProduct?.product_name || ""}
+                                value={formData.product_name}
                                 // value={formData.batchNo}
-                                // onChange={e => {
-                                //     setSelectedIntimationNo(e.target.value)
-                                //     const selectedProduct = products.find(
-                                //         (prod) => prod.intimation == e.target.value
-                                //     );
-
-                                //     console.log(e.target.value)
-
-                                //     console.log(selectedProduct)
-
-                                //     if (selectedProduct) {
-                                //         setSelectedProduct(selectedProduct)
-                                //     } else {
-                                //         setSelectedProduct(null)
-                                //     }
-                                // }}
+                                // 
+                                onChange={e => { setFormData({ ...formData, product_name: e.target.value }) }}
                                 className="input"
+                                readOnly
                             />
                             {/* <option value="Select Intimation No" selected>Select Intimation No</option>
                             {
@@ -350,7 +451,7 @@ const LineClearance = () => {
                                 type="text"
                                 name="stage"
                                 placeholder="Enter stage"
-                                value={selectedProduct?.tstage_des || ""}
+                                value={formData.tstage_des}
                                 // onChange={e => {
                                 //     setSelectedTstage(e.target.value)
 
@@ -364,7 +465,9 @@ const LineClearance = () => {
                                 //         setTstageDesc("");
                                 //     }
                                 // }}
+                                onChange={e => { setFormData({ ...formData, tstage_des: e.target.value }) }}
                                 className="input"
+                                readOnly
                             />
                             {/* <option value="">Process Stage</option> */}
                             {/* {
@@ -383,9 +486,10 @@ const LineClearance = () => {
                             <input
                                 type="date"
                                 name="intimationDate"
-                                value={selectedProduct?.idate ? selectedProduct.idate.split("T")[0] : ""}
-                                // onChange={handleChange}
+                                value={formData.idate ? formData.idate.split("T")[0] : ""}
+                                onChange={e => { setFormData({ ...formData, idate: e.target.value }) }}
                                 className="input"
+                                readOnly
                             />
                         </div>
 
@@ -398,9 +502,10 @@ const LineClearance = () => {
                                 type="text"
                                 name="employeeName"
                                 placeholder="Done By"
-                                value={LoginName}
-                                // onChange={handleChange}
+                                value={formData.ename}
+                                onChange={e => { setFormData({ ...formData, ename: e.target.value }) }}
                                 className="input"
+                                readOnly
                             />
                         </div>
 
@@ -413,8 +518,8 @@ const LineClearance = () => {
                                 name="remarks"
                                 rows="4"
                                 placeholder="Enter remarks"
-                                value={remarks}
-                                onChange={e => setRemarks(e.target.value)}
+                                value={formData.remarks}
+                                onChange={e => { setFormData({ ...formData, remarks: e.target.value }) }}
                                 className="input"
                             />
                         </div>
@@ -424,25 +529,26 @@ const LineClearance = () => {
                             <label className="text-sm font-semibold text-gray-600 mb-1">
                                 Check List For
                             </label>
-                            <select
+                            <input
                                 type="text"
                                 name="checkListFor"
                                 placeholder="Enter checklist for"
                                 className="input"
-                                value={selectedCheckListNo || ""}
+                                value={checkListFor.find(item => item.au == lclearRow?.au)?.ltyped || ""}
                                 onChange={e => {
-                                    setSelectedCheckListNo(e.target.value)
+                                    setSelectedCheckListNo(lclearRow?.au)
 
-                                    setAu(checkListFor.find(item => item.au == e.target.value)?.au || null)
+                                    setAu(checkListFor.find(item => item.au == lclearRow?.au)?.au || null)
                                 }}
-                            >
-                                <option value="">Check List For</option>
+                                readOnly
+                            />
+                            {/* <option value="">Check List For</option>
                                 {
                                     checkListFor.map(c => (
                                         <option value={c.au}>{c.ltyped}</option>
                                     ))
                                 }
-                            </select>
+                            </select> */}
                         </div>
 
                         {/* Line Clearance Check List */}
@@ -458,7 +564,7 @@ const LineClearance = () => {
                                 <div className="col-span-4">Observation</div>
                             </div>
 
-                            {checkList.map((item, index) => (
+                            {updCheckList.map((item, index) => (
                                 <div
                                     key={item.id}
                                     className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center border-b py-3"
@@ -476,7 +582,8 @@ const LineClearance = () => {
                                     {/* Dropdown */}
                                     <div className="md:col-span-4">
                                         <select
-                                            value={responses[index]}
+                                            // value={responses[index]}
+                                            value={item.obs}
                                             onChange={(e) => handleChange(index, e.target.value)}
                                             className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
                                         >
@@ -496,14 +603,15 @@ const LineClearance = () => {
                             <button
                                 type="submit"
                                 className="bg-indigo-600 hover:bg-indigo-700 transition text-white px-10 py-3 rounded-xl font-semibold shadow-lg"
+                                onClick={handleEdit}
                             >
                                 Save
                             </button>
                             <button
                                 type="button"
                                 className="bg-indigo-600 hover:bg-indigo-700 transition text-white px-10 py-3 rounded-xl font-semibold shadow-lg ml-2"
-                                onClick={clearForm}>
-                                Cancel
+                                onClick={handleDelete}>
+                                Delete
                             </button>
                         </div>
 
@@ -514,4 +622,4 @@ const LineClearance = () => {
     )
 }
 
-export default LineClearance
+export default EditLineClearance

@@ -195,6 +195,8 @@ export default function Login() {
         setPassword(res.data.data[0]?.password || "");
         setLoginName(res.data.data[0]?.username || "")
         setLoginId(res.data.data[0]?.id || null)
+        localStorage.setItem("loginName", res.data.data[0]?.username || "")
+        localStorage.setItem("loginId", res.data.data[0]?.id || "")
       })
       .catch(err => {
         console.log("Error:", err)
